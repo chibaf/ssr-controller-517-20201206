@@ -1,4 +1,4 @@
-import sys, queue
+import sys #, queue
 import re
 import time
 import datetime
@@ -6,7 +6,7 @@ import datetime
 from threading import Thread
 import RPi.GPIO as GPIO
 
-
+from queue import Queue
 
 # （threadで runしている classの）外のName空間で、SSRアルゴリズムを定義する。 {201129}
 sys_config={
@@ -88,28 +88,27 @@ class SsrController(Thread):
    
         target_temp = 20 #room temperature  {201117}
   
+        regex = re.compile('\d+')
+          
         while self.running:
             try:
                 list_tc_temp = []
                 while not self.q_tc_temp.empty():
-                    time_stamp_image=self.q_tc_temp.get()[0]    #{201130}
-                    time_seconds=time_stamp_image.total_seconds()
+                    timer=self.q_tc_temp.get()
+                    match = regex.findall(str(timer[0]))
+                    time_seconds=float(match[0])*3600.0+float(match[1])*60.0+float(match[2])+float(match[3])*0.1
                     print("time_seconds",time_seconds)
                     list_tc_temp.append(float(self.q_tc_temp.get()[1]))   #{201116} {201130}
                     list_tc_temp.append(float(self.q_tc_temp.get()[2])) 
                     list_tc_temp.append(float(self.q_tc_temp.get()[3])) 
                     list_tc_temp.append(float(self.q_tc_temp.get()[4])) 
-                    #list_tc_temp.append(float(self.q_tc_temp.get()))
-
-                    #tc_temp_av = sum(list_tc_temp) / len(list_tc_temp) #{201122}
-                    #print(f"SSR({self.pin_num}) Tc: {tc_temp_av:.2f}") #{201122}
 
                     pwm_width = self.get_pwm_width(target_temp, list_tc_temp) #group1
 
                     print("#### self.pin_num, pwm_width=",self.pin_num, pwm_width, "     ####")
 
                     self.set_pwm_width(pwm_width)
-                # time.sleep(1)
+
             except KeyboardInterrupt:
                 print (f'exiting thread-1 in temp_read({self.pin_num})')
                 self.close()
