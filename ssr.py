@@ -1,7 +1,6 @@
 import sys #, queue
 import re
 import time
-import datetime
 
 from threading import Thread
 import RPi.GPIO as GPIO
